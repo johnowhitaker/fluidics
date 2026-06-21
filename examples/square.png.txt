@@ -1,0 +1,9 @@
+The generated example square PNG is created by:
+
+python3 - <<'PY'
+from PIL import Image, ImageDraw
+img = Image.new("RGB", (900, 300), "white")
+draw = ImageDraw.Draw(img)
+draw.rectangle([260, 55, 640, 245], fill="black")
+img.save("examples/square.png")
+PY
