@@ -20,4 +20,4 @@ output/square_slide_trace.gcode output/square_preview.png: scripts/png_microflui
 		--out-gcode output/square_slide_trace.gcode
 
 check:
-	$(PYTHON) -m py_compile scripts/png_microfluidic_slicer.py scripts/octoprint_upload.py
+	$(PYTHON) -m py_compile scripts/png_microfluidic_slicer.py scripts/octoprint_upload.py scripts/duet_stepper.py

@@ -43,3 +43,20 @@ Upload a generated file with:
 ```sh
 python3 scripts/octoprint_upload.py output/square_slide_trace.gcode --select --print
 ```
+
+## Drive loose Duet steppers
+
+With the Duet connected over USB and VIN/motor power on:
+
+```sh
+python3 scripts/duet_stepper.py status
+python3 scripts/duet_stepper.py move --axis X --dir forward --rotations 1 --rpm 20
+python3 scripts/duet_stepper.py move --axis Y --dir reverse --rotations 0.5 --rpm 5
+python3 scripts/duet_stepper.py pulse --axis X --unit microstep --count 100 --interval-ms 250
+python3 scripts/duet_stepper.py pulse --axis Y --unit fullstep --count 20 --interval 1
+```
+
+The script auto-detects `/dev/cu.usbmodem*`, queries `M92` for the selected
+axis, and sends relative `G1` moves with `M564 S0` so the bench motors can move
+without homing. Rotation math assumes a 200 full-step motor and 16 microsteps;
+override those with `--steps-per-rev` and `--microsteps` if the hardware differs.

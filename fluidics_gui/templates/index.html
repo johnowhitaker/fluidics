@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#173f3b">
+    <title>Fluidics Studio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand" aria-label="Fluidics Studio">
+          <span class="brand-mark"><i></i><i></i><i></i></span>
+          <span>
+            <strong>Fluidics</strong>
+            <small>STUDIO</small>
+          </span>
+        </div>
+        <label class="job-name-wrap">
+          <span>Design</span>
+          <input id="jobName" value="Flow focusing v1" aria-label="Design name" maxlength="80">
+        </label>
+        <div class="top-actions">
+          <button class="icon-button" id="undoButton" title="Undo (⌘Z)" aria-label="Undo">↶</button>
+          <button class="icon-button" id="redoButton" title="Redo (⇧⌘Z)" aria-label="Redo">↷</button>
+          <span class="action-divider"></span>
+          <button class="quiet-button" id="newButton">New</button>
+          <button class="quiet-button" id="exampleButton">Load example</button>
+          <button class="quiet-button" id="importButton">Import</button>
+          <button class="quiet-button" id="exportButton">Export</button>
+          <input id="importInput" type="file" accept="application/json,.json" hidden>
+          <button class="primary-button" id="downloadButton"><span>↓</span> Download G-code</button>
+        </div>
+      </header>
+
+      <main class="app-grid">
+        <nav class="tool-rail" aria-label="Drawing tools">
+          <button class="tool-button active" data-tool="select" title="Select and move (V)">
+            <span class="tool-icon">↖</span><small>Select</small>
+          </button>
+          <button class="tool-button" data-tool="line" title="Straight channel (L)">
+            <span class="tool-icon line-icon"></span><small>Line</small>
+          </button>
+          <button class="tool-button" data-tool="freehand" title="Freehand channel (F)">
+            <span class="tool-icon">∿</span><small>Free</small>
+          </button>
+          <button class="tool-button" data-tool="arc" title="Circular arc (A)">
+            <span class="tool-icon arc-icon"></span><small>Arc</small>
+          </button>
+          <button class="tool-button" data-tool="circle" title="Circular chamber or ring (C)">
+            <span class="tool-icon circle-icon"></span><small>Circle</small>
+          </button>
+          <button class="tool-button" data-tool="guide" title="Non-printing coverslip guide (G)">
+            <span class="tool-icon guide-icon"></span><small>Guide</small>
+          </button>
+          <span class="rail-spacer"></span>
+          <button class="tool-button danger-tool" id="deleteButton" title="Delete selected (Delete)">
+            <span class="tool-icon">×</span><small>Delete</small>
+          </button>
+        </nav>
+
+        <section class="workspace" aria-label="Chip editor">
+          <div class="workspace-heading">
+            <div>
+              <div class="eyebrow">MICROSCOPE SLIDE · 75 × 25 MM</div>
+              <h1>Channel layout</h1>
+            </div>
+            <div class="view-controls" role="group" aria-label="Preview display">
+              <label><input id="showGrid" type="checkbox" checked> Grid</label>
+              <label><input id="showGuides" type="checkbox" checked> Guides</label>
+              <label class="print-path-toggle"><input id="showPrintPaths" type="checkbox" checked> Print paths</label>
+            </div>
+          </div>
+
+          <div class="canvas-card">
+            <div class="canvas-meta top-meta">
+              <span id="toolHint">Drag to select or move. Hold Shift to add to a selection.</span>
+              <span id="cursorPosition">x 0.00 · y 0.00 mm</span>
+            </div>
+            <div class="slide-stage" id="slideStage">
+              <canvas id="designCanvas" aria-label="75 by 25 millimetre chip design canvas" tabindex="0"></canvas>
+            </div>
+            <div class="canvas-meta bottom-meta">
+              <span><i class="legend-swatch channel-swatch"></i> Fluid void</span>
+              <span><i class="legend-swatch guide-swatch"></i> Coverslip guide</span>
+              <span><i class="legend-swatch path-swatch"></i> Nozzle centerline</span>
+              <span><i class="legend-swatch lead-swatch"></i> Lead in / out</span>
+              <span class="autosave-state" id="autosaveState">Saved locally</span>
+            </div>
+          </div>
+
+          <div class="job-summary" aria-live="polite">
+            <div class="preview-state">
+              <span class="pulse-dot"></span>
+              <div><strong id="previewStatus">Building preview</strong><small id="previewWarnings">Live from the fabrication engine</small></div>
+            </div>
+            <dl>
+              <div><dt>Paths</dt><dd id="statPaths">—</dd></div>
+              <div><dt>Trace length</dt><dd id="statLength">—</dd></div>
+              <div><dt>Filament</dt><dd id="statFilament">—</dd></div>
+              <div><dt>Motion time</dt><dd id="statTime">—</dd></div>
+            </dl>
+          </div>
+        </section>
+
+        <aside class="inspector" aria-label="Design and fabrication settings">
+          <div class="inspector-tabs" role="tablist">
+            <button class="inspector-tab active" data-panel="designPanel" role="tab">Design</button>
+            <button class="inspector-tab" data-panel="printPanel" role="tab">Fabrication</button>
+            <button class="inspector-tab" data-panel="connectPanel" role="tab">OctoPrint</button>
+          </div>
+
+          <div class="inspector-panel active" id="designPanel" role="tabpanel">
+            <section class="panel-section selection-section">
+              <div class="section-heading"><span>Selection</span><kbd id="selectionKind">NONE</kbd></div>
+              <div id="selectionEmpty" class="empty-selection">
+                <span class="empty-glyph">⌖</span>
+                <p>Select a channel, chamber, arc, or guide to edit exact dimensions.</p>
+              </div>
+              <div id="selectionFields" class="selection-fields" hidden></div>
+            </section>
+
+            <section class="panel-section">
+              <div class="section-heading"><span>New geometry</span><small>Defaults</small></div>
+              <div class="field-grid two-up">
+                <label class="field"><span>Channel width</span><div class="unit-input"><input id="defaultWidth" type="number" min="0.05" max="20" step="0.05" value="0.75"><i>mm</i></div></label>
+                <label class="field"><span>Arc sweep</span><div class="unit-input"><input id="defaultArcSweep" type="number" min="-360" max="360" step="15" value="90"><i>°</i></div></label>
+              </div>
+              <label class="field"><span>Circle behavior</span>
+                <select id="defaultCircleMode"><option value="chamber">Filled chamber</option><option value="ring">Circular channel</option></select>
+              </label>
+              <div class="preset-row" aria-label="Arc sweep presets">
+                <button data-arc-preset="45">45°</button><button data-arc-preset="90">90°</button><button data-arc-preset="180">180°</button><button data-arc-preset="-90">−90°</button>
+              </div>
+            </section>
+
+            <section class="panel-section">
+              <div class="section-heading"><span>Grid & snapping</span><small>Precision</small></div>
+              <label class="field"><span>Grid spacing</span><div class="unit-input"><input id="gridStep" type="number" min="0.1" max="10" step="0.1" value="1"><i>mm</i></div></label>
+              <label class="switch-row"><span><strong>Snap to grid</strong><small>Align points to the measurement grid</small></span><input id="gridSnap" type="checkbox" checked></label>
+              <label class="switch-row"><span><strong>Angle snap</strong><small>Hold Ctrl or ⌘ for 45° increments</small></span><input id="angleSnap" type="checkbox" checked></label>
+            </section>
+
+            <section class="panel-section guide-builder">
+              <div class="section-heading"><span>Coverslip guide</span><small>Non-printing</small></div>
+              <div class="field-grid two-up">
+                <label class="field"><span>Width</span><div class="unit-input"><input id="guideWidth" type="number" value="18" min="1" max="75" step="0.1"><i>mm</i></div></label>
+                <label class="field"><span>Height</span><div class="unit-input"><input id="guideHeight" type="number" value="18" min="1" max="25" step="0.1"><i>mm</i></div></label>
+                <label class="field"><span>Rotation</span><div class="unit-input"><input id="guideRotation" type="number" value="45" min="-180" max="180" step="1"><i>°</i></div></label>
+                <label class="field"><span>Label</span><input id="guideLabel" value="18 mm coverslip" maxlength="40"></label>
+              </div>
+              <button class="wide-button" id="addGuideButton">＋ Add centered guide</button>
+            </section>
+          </div>
+
+          <div class="inspector-panel" id="printPanel" role="tabpanel">
+            <div class="parameter-note"><span>LIVE</span> Every change rebuilds the nozzle preview.</div>
+            <details class="settings-group" open>
+              <summary><span>Path geometry</span><small>Contours & offsets</small></summary>
+              <div class="settings-body">
+                <div class="field-grid two-up">
+                  <label class="field"><span>Wall offset</span><div class="unit-input"><input data-setting="offset" type="number" value="0.25" step="0.05"><i>mm</i></div></label>
+                  <label class="field"><span>Perimeters</span><input data-setting="perimeters" type="number" value="1" min="1" max="12" step="1"></label>
+                  <label class="field"><span>Perimeter gap</span><div class="unit-input"><input data-setting="perimeter_spacing" type="number" value="0.45" min="0.05" step="0.05"><i>mm</i></div></label>
+                  <label class="field"><span>Min. contour</span><div class="unit-input"><input data-setting="min_contour_mm" type="number" value="0.8" min="0" step="0.1"><i>mm</i></div></label>
+                </div>
+              </div>
+            </details>
+            <details class="settings-group" open>
+              <summary><span>Extrusion</span><small>Bead & material</small></summary>
+              <div class="settings-body">
+                <div class="field-grid two-up">
+                  <label class="field"><span>Nozzle / line</span><div class="unit-input"><input data-setting="extrusion_line_width" type="number" value="0.45" min="0.05" step="0.01"><i>mm</i></div></label>
+                  <label class="field"><span>Layer height</span><div class="unit-input"><input data-setting="layer_height" type="number" value="0.18" min="0.02" step="0.01"><i>mm</i></div></label>
+                  <label class="field"><span>Print Z</span><div class="unit-input"><input data-setting="z_height" type="number" value="0.18" min="0.01" step="0.01"><i>mm</i></div></label>
+                  <label class="field"><span>Flow multiplier</span><div class="unit-input"><input data-setting="flow" type="number" value="0.75" min="0.05" step="0.05"><i>×</i></div></label>
+                  <label class="field"><span>Filament ⌀</span><div class="unit-input"><input data-setting="filament_diameter" type="number" value="1.75" min="0.5" step="0.01"><i>mm</i></div></label>
+                  <label class="field"><span>Extruder prime</span><div class="unit-input"><input data-setting="prime_mm" type="number" value="0" min="0" step="0.1"><i>mm</i></div></label>
+                  <label class="field"><span>Lead in / out</span><div class="unit-input"><input data-setting="prime_line" type="number" value="0" min="0" max="10" step="0.1"><i>mm</i></div><small class="field-help">Tangent filament line before and after every part contour</small></label>
+                  <label class="field"><span>Retract</span><div class="unit-input"><input data-setting="retract_mm" type="number" value="0.7" min="0" step="0.1"><i>mm</i></div></label>
+                  <label class="field"><span>Retract speed</span><div class="unit-input"><input data-setting="retract_feedrate" type="number" value="1200" min="1" step="50"><i>mm/min</i></div></label>
+                </div>
+              </div>
+            </details>
+            <details class="settings-group">
+              <summary><span>Motion & temperature</span><small>Printer behavior</small></summary>
+              <div class="settings-body">
+                <div class="field-grid two-up">
+                  <label class="field"><span>Print speed</span><div class="unit-input"><input data-setting="print_feedrate" type="number" value="900" min="1" step="50"><i>mm/min</i></div></label>
+                  <label class="field"><span>Travel speed</span><div class="unit-input"><input data-setting="travel_feedrate" type="number" value="3000" min="1" step="100"><i>mm/min</i></div></label>
+                  <label class="field"><span>Z speed</span><div class="unit-input"><input data-setting="z_feedrate" type="number" value="600" min="1" step="50"><i>mm/min</i></div></label>
+                  <label class="field"><span>Safe travel Z</span><div class="unit-input"><input data-setting="safe_z" type="number" value="8" min="0.1" step="0.5"><i>mm</i></div></label>
+                  <label class="field"><span>Nozzle</span><div class="unit-input"><input data-setting="nozzle_temp" type="number" value="205" min="0" max="320" step="1"><i>°C</i></div></label>
+                  <label class="field"><span>Bed</span><div class="unit-input"><input data-setting="bed_temp" type="number" value="0" min="0" max="150" step="1"><i>°C</i></div></label>
+                  <label class="field"><span>Fan</span><div class="unit-input"><input data-setting="fan_percent" type="number" value="0" min="0" max="100" step="5"><i>%</i></div></label>
+                </div>
+              </div>
+            </details>
+            <details class="settings-group">
+              <summary><span>Slide placement</span><small>Printer coordinates</small></summary>
+              <div class="settings-body">
+                <div class="field-grid two-up">
+                  <label class="field"><span>Slide X origin</span><div class="unit-input"><input data-setting="x0" type="number" value="72.5" step="0.1"><i>mm</i></div></label>
+                  <label class="field"><span>Slide Y origin</span><div class="unit-input"><input data-setting="y0" type="number" value="97.5" step="0.1"><i>mm</i></div></label>
+                  <label class="field"><span>Slide width</span><div class="unit-input"><input data-setting="slide_width" type="number" value="75" min="1" step="0.1"><i>mm</i></div></label>
+                  <label class="field"><span>Slide height</span><div class="unit-input"><input data-setting="slide_height" type="number" value="25" min="1" step="0.1"><i>mm</i></div></label>
+                </div>
+                <label class="switch-row"><span><strong>Home before print</strong><small>Emit G28 before positioning</small></span><input data-setting="home_axes" type="checkbox" checked></label>
+                <label class="switch-row"><span><strong>Probe slide center</strong><small>Move to center and emit G30</small></span><input data-setting="probe_at_center" type="checkbox"></label>
+                <label class="field"><span>Probe Z offset</span><div class="unit-input"><input data-setting="probe_z_offset" type="number" value="0" step="0.01"><i>mm</i></div></label>
+              </div>
+            </details>
+            <details class="settings-group">
+              <summary><span>Priming brim</span><small>Optional loops</small></summary>
+              <div class="settings-body">
+                <div class="field-grid two-up">
+                  <label class="field"><span>Brim loops</span><input data-setting="brim_count" type="number" value="0" min="0" max="12" step="1"></label>
+                  <label class="field"><span>Initial margin</span><div class="unit-input"><input data-setting="brim_margin" type="number" value="1" min="0" step="0.1"><i>mm</i></div></label>
+                  <label class="field"><span>Loop spacing</span><div class="unit-input"><input data-setting="brim_spacing" type="number" value="1" min="0.05" step="0.1"><i>mm</i></div></label>
+                </div>
+              </div>
+            </details>
+            <details class="settings-group">
+              <summary><span>Heating & end park</span><small>Optional positions</small></summary>
+              <div class="settings-body">
+                <label class="switch-row"><span><strong>Use heating park</strong><small>Move away from the slide while heating</small></span><input data-setting="heat_park_enabled" type="checkbox"></label>
+                <div class="field-grid three-up">
+                  <label class="field"><span>Heat X</span><input data-setting="heat_park_x" type="number" value="158" step="0.1"></label>
+                  <label class="field"><span>Heat Y</span><input data-setting="heat_park_y" type="number" value="135" step="0.1"></label>
+                  <label class="field"><span>Heat Z</span><input data-setting="heat_park_z" type="number" value="25" step="0.1"></label>
+                </div>
+                <label class="switch-row"><span><strong>Park after print</strong><small>Move to a known XY position</small></span><input data-setting="end_park_enabled" type="checkbox"></label>
+                <div class="field-grid two-up">
+                  <label class="field"><span>End X</span><input data-setting="end_park_x" type="number" value="158" step="0.1"></label>
+                  <label class="field"><span>End Y</span><input data-setting="end_park_y" type="number" value="135" step="0.1"></label>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <div class="inspector-panel" id="connectPanel" role="tabpanel">
+            <section class="connection-hero">
+              <div class="octo-glyph"><span></span><span></span><span></span></div>
+              <h2>OctoPrint bridge</h2>
+              <p>The browser talks to this local app; the app sends the generated G-code to your Pi.</p>
+            </section>
+            <section class="panel-section">
+              <label class="field"><span>OctoPrint address</span><input id="octoprintUrl" type="url" placeholder="http://octopi.local"></label>
+              <label class="field"><span>API key</span><div class="secret-input"><input id="octoprintKey" type="password" autocomplete="off" placeholder="Paste API key"><button id="showKeyButton" aria-label="Show or hide API key">Show</button></div></label>
+              <p class="privacy-note">Connection details stay in this browser and are only sent to the local Flask app when used.</p>
+              <button class="wide-button" id="testConnectionButton">Test connection</button>
+              <div class="connection-status idle" id="connectionStatus"><i></i><span><strong>Not tested</strong><small>Configure your Pi to continue</small></span></div>
+            </section>
+            <section class="panel-section send-section">
+              <div class="section-heading"><span>Send job</span><small id="sendJobName">Flow focusing v1.gcode</small></div>
+              <button class="wide-button" id="uploadButton">Upload to OctoPrint</button>
+              <button class="wide-button" id="uploadSelectButton">Upload & select</button>
+              <button class="print-button" id="printButton"><span class="print-icon">▶</span><span><strong>Print now</strong><small>Upload, select, and begin the job</small></span></button>
+              <label class="switch-row print-confirm-setting"><span><strong>Confirm before starting</strong><small>Turn off to make Print now immediate</small></span><input id="confirmBeforePrint" type="checkbox" checked></label>
+              <div class="safety-callout"><strong>Before printing</strong><p>Verify the path preview, glass position, slide origin, nozzle clearance, and Z height at the machine.</p></div>
+            </section>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+    <div class="modal-backdrop" id="printModal" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="printModalTitle">
+        <button class="modal-close" id="closePrintModal" aria-label="Close">×</button>
+        <span class="modal-badge">HARDWARE ACTION</span>
+        <h2 id="printModalTitle">Start this print?</h2>
+        <p>OctoPrint will begin the job immediately. This cannot confirm where the slide or nozzle physically is.</p>
+        <div class="modal-job"><span id="modalJobName">Flow-focusing-v1.gcode</span><strong id="modalJobStats">—</strong></div>
+        <label class="confirm-check"><input id="printConfirmed" type="checkbox"><span>I verified the slide origin, path preview, Z height, and nozzle clearance at the printer.</span></label>
+        <label class="confirm-check skip-confirm"><input id="skipPrintConfirmation" type="checkbox"><span>Don't show this confirmation again on this browser.</span></label>
+        <div class="modal-actions"><button class="quiet-button" id="cancelPrintButton">Cancel</button><button class="danger-button" id="confirmPrintButton" disabled>Upload & start print</button></div>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </body>
+</html>

@@ -1,0 +1,61 @@
+{
+  "format": "fluidics-studio",
+  "version": 1,
+  "design": {
+    "version": 1,
+    "name": "Flow focusing v1",
+    "shapes": [
+      { "id": "main-in", "type": "line", "name": "Carrier inlet", "x1": 10, "y1": 12.5, "x2": 31, "y2": 12.5, "width": 0.8 },
+      { "id": "neck", "type": "line", "name": "Orifice", "x1": 31, "y1": 12.5, "x2": 42, "y2": 12.5, "width": 0.45 },
+      { "id": "out", "type": "line", "name": "Droplet outlet", "x1": 42, "y1": 12.5, "x2": 66, "y2": 12.5, "width": 1.15 },
+      { "id": "top-in", "type": "line", "name": "Top focusing inlet", "x1": 35, "y1": 3.5, "x2": 35, "y2": 11.8, "width": 0.8 },
+      { "id": "bottom-in", "type": "line", "name": "Bottom focusing inlet", "x1": 35, "y1": 21.5, "x2": 35, "y2": 13.2, "width": 0.8 },
+      { "id": "p1", "type": "circle", "name": "Carrier port", "cx": 8.5, "cy": 12.5, "radius": 1.7, "width": 0.8, "mode": "chamber" },
+      { "id": "p2", "type": "circle", "name": "Top port", "cx": 35, "cy": 2.8, "radius": 1.6, "width": 0.8, "mode": "chamber" },
+      { "id": "p3", "type": "circle", "name": "Bottom port", "cx": 35, "cy": 22.2, "radius": 1.6, "width": 0.8, "mode": "chamber" },
+      { "id": "p4", "type": "circle", "name": "Outlet port", "cx": 68, "cy": 12.5, "radius": 1.8, "width": 0.8, "mode": "chamber" }
+    ],
+    "guides": [
+      { "id": "guide-1", "type": "guide", "name": "18 mm coverslip", "x": 38.5, "y": 12.5, "width": 18, "height": 18, "rotation": 45 }
+    ]
+  },
+  "settings": {
+    "offset": 0.25,
+    "perimeters": 1,
+    "perimeter_spacing": 0.45,
+    "min_contour_mm": 0.8,
+    "x0": 72.5,
+    "y0": 97.5,
+    "z_height": 0.18,
+    "print_feedrate": 900,
+    "travel_feedrate": 3000,
+    "z_feedrate": 600,
+    "nozzle_temp": 205,
+    "bed_temp": 0,
+    "filament_diameter": 1.75,
+    "extrusion_line_width": 0.45,
+    "layer_height": 0.18,
+    "flow": 0.75,
+    "fan_percent": 0,
+    "prime_mm": 0,
+    "prime_line": 0,
+    "retract_mm": 0.7,
+    "retract_feedrate": 1200,
+    "safe_z": 8,
+    "home_axes": true,
+    "probe_at_center": false,
+    "probe_z_offset": 0,
+    "heat_park_enabled": false,
+    "heat_park_x": 158,
+    "heat_park_y": 135,
+    "heat_park_z": 25,
+    "end_park_enabled": false,
+    "end_park_x": 158,
+    "end_park_y": 135,
+    "brim_count": 0,
+    "brim_margin": 1,
+    "brim_spacing": 1,
+    "slide_width": 75,
+    "slide_height": 25
+  }
+}
