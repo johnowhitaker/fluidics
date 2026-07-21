@@ -1,7 +1,38 @@
 # Fluidics slide-printing tools
 
-Experimental tools for locating a microscope slide on an Ender 3 V3 SE bed and
-generating one-layer G-code from black PNG masks.
+> **Work in progress:** this is experimental hardware and machine-control
+> software. Verify generated paths, printer coordinates, temperatures, nozzle
+> clearance, and Z height before running a job.
+
+This project explores fabricating microfluidic chips by printing precise,
+single-layer plastic channel walls onto glass microscope slides and thermally
+bonding a coverslip on top. Background on the earlier fabrication experiments is
+available in [Microfluidics, attempt 1](https://johnowhitaker.dev/mini-hw-projects/microfluidics_1.html).
+
+## Recommended workflow: Fluidics Studio
+
+The recommended way to design and print chips is the standalone browser-based
+[Fluidics Studio](fluidics_gui/README.md) app in `fluidics_gui/`. It provides a
+millimetre-accurate 75 × 25 mm editor, straight/freehand/arc/circle tools,
+coverslip guides, snapping, live nozzle-path previews, full fabrication settings,
+G-code generation, and direct OctoPrint upload/printing.
+
+```sh
+python3 -m venv fluidics_gui/.venv
+source fluidics_gui/.venv/bin/activate
+pip install -r fluidics_gui/requirements.txt
+python -m fluidics_gui.app
+```
+
+Then open <http://127.0.0.1:5000>. See the
+[Fluidics Studio README](fluidics_gui/README.md) for editor controls, fabrication
+parameters, OctoPrint setup, and the pre-print safety checklist.
+
+## Earlier command-line tools
+
+The original PNG-based scripts remain available for reproducing and extending
+the earlier workflow. They locate a microscope slide on an Ender 3 V3 SE bed and
+generate one-layer G-code from black PNG masks.
 
 ## Files
 
@@ -13,7 +44,7 @@ generating one-layer G-code from black PNG masks.
 Generated STL, preview, and G-code files go in `output/`, which is ignored by
 git.
 
-## Generate a slide trace
+### Generate a slide trace
 
 ```sh
 python3 scripts/png_microfluidic_slicer.py examples/square.png \
@@ -44,7 +75,7 @@ Upload a generated file with:
 python3 scripts/octoprint_upload.py output/square_slide_trace.gcode --select --print
 ```
 
-## Drive loose Duet steppers
+### Drive loose Duet steppers
 
 With the Duet connected over USB and VIN/motor power on:
 
