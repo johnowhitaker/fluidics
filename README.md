@@ -11,6 +11,9 @@ available in [Microfluidics, attempt 1](https://johnowhitaker.dev/mini-hw-projec
 
 ## Recommended workflow: Fluidics Studio
 
+<img width="1254" height="792" alt="Screenshot 2026-07-22 at 8 35 03 AM" src="https://github.com/user-attachments/assets/159a1591-1f28-4283-918b-a57feb207e09" />
+
+
 The recommended way to design and print chips is the standalone browser-based
 [Fluidics Studio](fluidics_gui/README.md) app in `fluidics_gui/`. It provides a
 millimetre-accurate 75 × 25 mm editor, straight/freehand/arc/circle tools,
